@@ -168,7 +168,7 @@ class TinyDBRequestHandler(http.server.BaseHTTPRequestHandler):
         html = f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>TinyDB Cluster Dashboard</title>
+    <title>Bảng điều khiển TinyDB Cluster</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body {{ font-family: 'Outfit', sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }}
@@ -187,7 +187,7 @@ class TinyDBRequestHandler(http.server.BaseHTTPRequestHandler):
         .btn-crash {{ background: #ef4444; color: white; }}
         .btn-revive {{ background: #22c55e; color: white; }}
         .btn-promote {{ background: #a855f7; color: white; width: 100%; margin-top: 10px; }}
-        .logs {{ background: #020617; font-family: monospace; height: 200px; overflow-y: auto; padding: 10px; border-radius: 5px; font-size: 0.85rem; }}
+        .logs {{ background: #020617; font-family: monospace; height: 350px; overflow-y: auto; padding: 10px; border-radius: 5px; font-size: 0.85rem; }}
         table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }}
         th, td {{ padding: 8px; text-align: left; border-bottom: 1px solid #334155; }}
         th {{ background: #0f172a; }}
@@ -196,28 +196,43 @@ class TinyDBRequestHandler(http.server.BaseHTTPRequestHandler):
 <body>
     <div class="container">
         <header>
-            <h2>TinyDB Distributed Console</h2>
-            <div><span class="badge {self.server.node.role}">{self.server.node.role}</span> {self.server.node.my_url}</div>
+            <h2>Bảng điều khiển TinyDB Phân Tán</h2>
+            <div>Vai trò: <span class="badge {self.server.node.role}">{self.server.node.role}</span> | Node: <strong>{self.server.node.my_url}</strong></div>
         </header>
         <div class="panel">
-            <h3>Cluster Node Map</h3>
+            <h3>Sơ đồ Cụm Node (Cluster Map)</h3>
             <div class="node-list" id="nodes"></div>
         </div>
         <div class="grid">
             <div class="panel">
-                <h3>Database Records</h3>
+                <h3>Dữ liệu Bản ghi (Database Records)</h3>
+                
+                <div style="margin-bottom: 15px; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155;">
+                    <h4 style="margin-top:0; margin-bottom:8px;">Thêm dữ liệu mới (JSON)</h4>
+                    <textarea id="json-input" rows="4" style="width: 100%; box-sizing: border-box; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 5px; padding: 8px; font-family: monospace; resize: vertical;"></textarea>
+                    <button id="btn-insert" class="btn" style="background: #10b981; color: white; width: 100%; margin-top: 8px; padding: 8px; font-size: 0.9rem;" onclick="insertRecord()">Chèn bản ghi (Insert)</button>
+                    <p id="readonly-warning" style="color: #f87171; font-size: 0.85rem; margin-top: 8px; margin-bottom: 0; display: none;"></p>
+                </div>
+
                 <table>
-                    <thead><tr><th>ID</th><th>Data</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Dữ liệu</th></tr></thead>
                     <tbody id="records"></tbody>
                 </table>
             </div>
             <div class="panel">
-                <h3>Event Logs</h3>
+                <h3>Nhật ký Sự kiện (Event Logs)</h3>
                 <div class="logs" id="logs"></div>
             </div>
         </div>
     </div>
     <script>
+        // Khởi tạo dữ liệu mẫu cho JSON input
+        document.getElementById("json-input").value = JSON.stringify({{
+            "name": "Nguyen Van C",
+            "email": "c@example.com",
+            "role": "Student"
+        }}, null, 4);
+
         async function update() {{
             try {{
                 const res = await fetch("/api/dashboard_data");
@@ -227,17 +242,17 @@ class TinyDBRequestHandler(http.server.BaseHTTPRequestHandler):
                     <div class="node-card">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <strong>${{n.url}}</strong>
-                            <span class="badge ${{n.is_crashed ? 'CRASHED' : 'ONLINE'}}">${{n.is_crashed ? 'CRASHED' : 'ONLINE'}}</span>
+                            <span class="badge ${{n.is_crashed ? 'CRASHED' : 'ONLINE'}}">${{n.is_crashed ? 'MẤT KẾT NỐI' : 'ĐANG CHẠY'}}</span>
                         </div>
                         <div style="margin-top:10px;display:flex;justify-content:space-between;">
                             <span class="badge ${{n.role}}">${{n.role}}</span>
                             ${{n.url === '{self.server.node.my_url}' ? 
                                 (n.is_crashed ? 
-                                    `<button class="btn btn-revive" onclick="fetch('/api/simulate_revive',{{method:'POST'}})">Revive</button>` : 
-                                    `<button class="btn btn-crash" onclick="fetch('/api/simulate_crash',{{method:'POST'}})">Crash</button>`) : ''}}
+                                    `<button class="btn btn-revive" onclick="fetch('/api/simulate_revive',{{method:'POST'}})">Khôi Phục (Revive)</button>` : 
+                                    `<button class="btn btn-crash" onclick="fetch('/api/simulate_crash',{{method:'POST'}})">Đánh Sập (Crash)</button>`) : ''}}
                         </div>
                         ${{n.role === 'BACKUP' && !n.is_crashed && !data.cluster_status.find(x => x.url === '{self.server.node.my_url}').is_crashed ? 
-                            `<button class="btn btn-promote" onclick="promote('${{n.url}}')">Promote to Primary</button>` : ''}}
+                            `<button class="btn btn-promote" onclick="promote('${{n.url}}')">Thăng cấp làm Primary</button>` : ''}}
                     </div>
                 `).join("");
                 
@@ -246,8 +261,63 @@ class TinyDBRequestHandler(http.server.BaseHTTPRequestHandler):
                 `).join("");
                 
                 document.getElementById("logs").innerHTML = data.logs.map(l => `<div>${{l}}</div>`).join("");
+                
+                // Cập nhật trạng thái của nút thêm bản ghi dựa trên vai trò
+                const currentRole = data.role;
+                const myStatus = data.cluster_status.find(x => x.url === '{self.server.node.my_url}');
+                const isCrashed = myStatus ? myStatus.is_crashed : false;
+                
+                const btnInsert = document.getElementById("btn-insert");
+                const warningText = document.getElementById("readonly-warning");
+                
+                if (isCrashed) {{
+                    btnInsert.disabled = true;
+                    btnInsert.style.background = "#475569";
+                    btnInsert.style.cursor = "not-allowed";
+                    warningText.style.display = "block";
+                    warningText.innerHTML = "⚠️ Node hiện tại đã bị đánh sập (Crash). Khôi phục để thao tác.";
+                }} else if (currentRole === 'BACKUP') {{
+                    btnInsert.disabled = true;
+                    btnInsert.style.background = "#475569";
+                    btnInsert.style.cursor = "not-allowed";
+                    warningText.style.display = "block";
+                    warningText.innerHTML = "⚠️ Nút Backup chỉ đọc (Read-only). Vui lòng ghi dữ liệu từ phía Primary hoặc Promote node này lên Primary.";
+                }} else {{
+                    btnInsert.disabled = false;
+                    btnInsert.style.background = "#10b981";
+                    btnInsert.style.cursor = "pointer";
+                    warningText.style.display = "none";
+                }}
             }} catch(e) {{}}
         }}
+        
+        async function insertRecord() {{
+            const textarea = document.getElementById("json-input");
+            const rawVal = textarea.value.trim();
+            if (!rawVal) return;
+            try {{
+                const doc = JSON.parse(rawVal);
+                const res = await fetch("/api/query", {{
+                    method: "POST",
+                    headers: {{"Content-Type": "application/json"}},
+                    body: JSON.stringify({{
+                        action: "insert",
+                        table: "_default",
+                        doc: doc
+                    }})
+                }});
+                const result = await res.json();
+                if (result.success) {{
+                    alert("Thêm bản ghi thành công!");
+                    update();
+                }} else {{
+                    alert("Lỗi từ server: " + result.error);
+                }}
+            }} catch (e) {{
+                alert("JSON không hợp lệ! Vui lòng kiểm tra lại định dạng. Chi tiết: " + e.message);
+            }}
+        }}
+
         async function promote(url) {{
             await fetch(url + "/api/promote", {{method: 'POST', body: JSON.stringify({{new_primary_url: url}})}});
         }}

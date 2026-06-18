@@ -1,5 +1,6 @@
 import urllib.request
 import urllib.parse
+import urllib.error
 import json
 from tinydb.table import Document
 
@@ -32,6 +33,15 @@ def make_request(url, path, method="POST", data=None):
         with urllib.request.urlopen(req, timeout=5) as response:
             res_data = response.read().decode("utf-8")
             return json.loads(res_data)
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read().decode("utf-8")
+            res_data = json.loads(body)
+            if isinstance(res_data, dict):
+                return res_data
+        except Exception:
+            pass
+        return {"success": False, "error": str(e)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
