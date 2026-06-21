@@ -63,3 +63,7 @@ python -m pytest
 ## Giấy phép
 
 MIT License
+
+## Video trình bày
+
+https://drive.google.com/file/d/1QjUp7HuKwXjCl8ws3B4TxUQMcLI1rmQV/view?usp=drive_link
